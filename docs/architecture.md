@@ -148,3 +148,92 @@ Notes:
 - Data tests run before the model. Bad input stops the run, so the model never produces a forecast from broken data.
 - If a run fails, the API still serves the last good forecast. An old forecast is better than a wrong one.
 - Scoring always looks backward. A forecast made at T can be fully scored only 24 hours later, when all 48 actual prices exist.
+
+## 4. Data model
+
+Question: what tables does the warehouse hold, and how do they join?
+
+Three time columns appear in many tables:
+
+- `published_at`: when the source made the value public.
+- `issue_time`: when VoltCast makes a forecast.
+- `target_time`: the end of the half hour that a value describes.
+
+```mermaid
+erDiagram
+    ACTUAL_PRICES {
+        string region PK
+        timestamp target_time PK
+        float price
+        float demand
+        timestamp published_at
+    }
+    AEMO_PREDISPATCH {
+        string region PK
+        timestamp published_at PK
+        timestamp target_time PK
+        float forecast_price
+        float forecast_demand
+    }
+    WEATHER_FORECASTS {
+        string location PK
+        timestamp published_at PK
+        timestamp target_time PK
+        float temperature
+        float wind_speed
+        float solar_radiation
+    }
+    FEATURES {
+        string region PK
+        timestamp issue_time PK
+        timestamp target_time PK
+        int horizon_steps
+        float price_lag_features
+        float aemo_forecast_price
+        float weather_features
+        float calendar_features
+    }
+    MODEL_VERSIONS {
+        string model_version PK
+        timestamp trained_at
+        timestamp training_data_end
+        string status
+    }
+    FORECASTS {
+        string model_version PK
+        string region PK
+        timestamp issue_time PK
+        timestamp target_time PK
+        float price_p10
+        float price_p50
+        float price_p90
+        float spike_probability
+    }
+    FORECAST_SCORES {
+        string model_version PK
+        string region PK
+        timestamp issue_time PK
+        timestamp target_time PK
+        float actual_price
+        float model_abs_error
+        float aemo_abs_error
+        float naive_abs_error
+    }
+
+    ACTUAL_PRICES ||--o{ FEATURES : "gives past prices to"
+    AEMO_PREDISPATCH ||--o{ FEATURES : "gives latest run before issue_time to"
+    WEATHER_FORECASTS ||--o{ FEATURES : "gives latest run before issue_time to"
+    FEATURES ||--o{ FORECASTS : "is input for"
+    MODEL_VERSIONS ||--o{ FORECASTS : "produces"
+    FORECASTS ||--o| FORECAST_SCORES : "is scored in"
+    ACTUAL_PRICES ||--o{ FORECAST_SCORES : "gives the real price to"
+```
+
+Notes:
+
+- The two forecast source tables keep every run, not only the newest one. For one `target_time` there are many rows, one for each `published_at`.
+- A feature row may use a source row only when `published_at` is earlier than `issue_time`. This join condition is the "no future data" rule written as SQL.
+- One forecast row is one model, one issue time and one target time. So a single hourly run writes 48 rows.
+- `FORECAST_SCORES` stores the model error beside both baseline errors for the same row, so every comparison uses exactly the same half hours.
+- In `FEATURES`, the four columns ending in `_features` stand for groups of columns. The real names will be set in Sprint 2.
+- Column names may change after the data check in step 0.7, when we see the real source files.

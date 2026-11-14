@@ -9,7 +9,7 @@ One step at a time. A box is ticked only after the step is verified.
 - [x] 0.3 Diagram 1: system context
 - [x] 0.4 Diagram 2: components
 - [x] 0.5 Diagram 3: hourly forecast run (sequence)
-- [ ] 0.6 Diagram 4: data model
+- [x] 0.6 Diagram 4: data model
 - [ ] 0.7 Day 1 data check: download one week of each data source for VIC
 
 ## Sprint 1: Data and baselines
