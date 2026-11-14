@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Data and model files (large, can be rebuilt by the pipeline)
+data/
+*.parquet
+*.duckdb
+*.duckdb.wal
+mlruns/
+mlartifacts/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# Dagster
+.dagster/
+tmp*/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Editors and operating system
+.vscode/
+.idea/
+.DS_Store
