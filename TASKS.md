@@ -5,7 +5,7 @@ One step at a time. A box is ticked only after the step is verified.
 ## Sprint 0: Setup and design
 
 - [x] 0.1 Repository basics: `.gitignore`, starter `README.md`, `TASKS.md`
-- [ ] 0.2 Python environment: `venv`, `pyproject.toml`, package folder, first passing `pytest`
+- [x] 0.2 Python environment: `venv`, `pyproject.toml`, package folder, first passing `pytest`
 - [ ] 0.3 Diagram 1: system context
 - [ ] 0.4 Diagram 2: components
 - [ ] 0.5 Diagram 3: hourly forecast run (sequence)
