@@ -98,3 +98,53 @@ Notes:
 - Training and forecasting are separate jobs joined only by the model registry. A new model is used only after it is approved there.
 - The API and the demo page only read. They never run the model during a request, so responses are fast.
 - Solid lines show data. Dotted lines show triggers.
+
+## 3. Hourly forecast run
+
+Question: what happens, in order, during one hourly run?
+
+In this diagram, T is the issue time. It is the moment the forecast is made.
+
+```mermaid
+sequenceDiagram
+    participant S as Scheduler (GitHub Actions)
+    participant I as Ingestion
+    participant X as AEMO and Open-Meteo
+    participant R as Raw store (Parquet)
+    participant D as dbt
+    participant W as Warehouse (DuckDB)
+    participant F as Forecast job
+    participant M as Model registry (MLflow)
+    participant C as Scoring job
+
+    S->>I: Start hourly run with issue time T
+    I->>X: Request data published since the last run
+    X-->>I: Prices, demand, pre-dispatch forecasts, weather forecasts
+    I->>R: Save raw files with their publish time
+
+    S->>D: Run transforms and data tests
+    D->>R: Read raw files
+    D->>W: Build feature rows for T using only inputs published before T
+
+    alt Data tests pass
+        S->>F: Run forecast
+        F->>M: Load the approved model
+        M-->>F: Model
+        F->>W: Read feature rows for T
+        F->>W: Write 48 forecasts, from T plus 30 minutes to T plus 24 hours
+
+        S->>C: Run scoring
+        C->>W: Read past forecasts whose target time now has an actual price
+        C->>W: Write errors for those forecasts
+    else Data tests fail
+        D-->>S: Report failure
+        Note over S,W: The run stops. The last good forecast stays in the warehouse.
+    end
+```
+
+Notes:
+
+- Every raw file is saved with its publish time. This is what makes the rule "no future data" possible to check.
+- Data tests run before the model. Bad input stops the run, so the model never produces a forecast from broken data.
+- If a run fails, the API still serves the last good forecast. An old forecast is better than a wrong one.
+- Scoring always looks backward. A forecast made at T can be fully scored only 24 hours later, when all 48 actual prices exist.
