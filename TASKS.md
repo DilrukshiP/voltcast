@@ -11,6 +11,9 @@ One step at a time. A box is ticked only after the step is verified.
 - [x] 0.5 Diagram 3: hourly forecast run (sequence)
 - [x] 0.6 Diagram 4: data model
 - [ ] 0.7 Day 1 data check: download one week of each data source for VIC
+  - [x] 0.7a Actual prices and demand (NEMOSIS)
+  - [ ] 0.7b AEMO pre-dispatch forecasts
+  - [ ] 0.7c Weather forecasts
 
 ## Sprint 1: Data and baselines
 
