@@ -45,3 +45,15 @@ def test_settings_cannot_be_changed_after_creation() -> None:
     settings = make_settings()
     with pytest.raises(ValidationError):
         settings.region = "NSW1"  # type: ignore[misc]
+
+
+def test_default_holdout_is_the_last_three_months() -> None:
+    settings = make_settings()
+    assert settings.holdout_start == date(2026, 7, 1)
+    assert settings.warehouse_path == Path("data") / "voltcast.duckdb"
+
+
+def test_holdout_before_history_start_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VOLTCAST_HOLDOUT_START", "2024-01-15")
+    with pytest.raises(ValidationError, match="holdout_start must be after history_start"):
+        make_settings()

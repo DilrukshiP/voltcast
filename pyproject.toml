@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
     "beautifulsoup4>=4.12",
     "dbt-duckdb>=1.10",
+    "duckdb>=1.1",
     "nemosis>=3.8",
     "pandas>=2.2",
     "pyarrow>=17.0",

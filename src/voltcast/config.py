@@ -8,9 +8,9 @@ for example `VOLTCAST_DATA_DIR=/tmp/voltcast-data`.
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Region = Literal["NSW1", "QLD1", "SA1", "TAS1", "VIC1"]
@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     longitude: float = Field(default=144.96, ge=-180, le=180)
     market_timezone: str = "Australia/Brisbane"
     history_start: date = EARLIEST_HISTORY_START
+    # Data from this date on is the final holdout. It is scored once, at the end of the project.
+    holdout_start: date = date(2026, 7, 1)
     data_dir: Path = Path("data")
     nemweb_archive_url: str = "https://www.nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM"
     weather_api_url: str = "https://previous-runs-api.open-meteo.com/v1/forecast"
@@ -49,10 +51,22 @@ class Settings(BaseSettings):
             raise ValueError(f"history_start must be {EARLIEST_HISTORY_START} or later")
         return value
 
+    @model_validator(mode="after")
+    def holdout_is_after_history_start(self) -> Self:
+        """Reject a holdout that starts before any data exists."""
+        if self.holdout_start <= self.history_start:
+            raise ValueError("holdout_start must be after history_start")
+        return self
+
     @property
     def raw_dir(self) -> Path:
         """Folder for files exactly as downloaded."""
         return self.data_dir / "raw"
+
+    @property
+    def warehouse_path(self) -> Path:
+        """The DuckDB file that dbt builds."""
+        return self.data_dir / "voltcast.duckdb"
 
 
 @lru_cache

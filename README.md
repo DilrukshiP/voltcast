@@ -18,4 +18,13 @@ Python, DuckDB, dbt, Dagster, LightGBM, MLflow, FastAPI, Docker, Prometheus, Gra
 
 ## Results
 
-Results will be added here once the evaluation is complete.
+Model results will be added here once the evaluation is complete.
+
+The two baselines are already scored on the development period (February 2024 to June 2026). The full table is in [evals/baseline_report.md](evals/baseline_report.md).
+
+| Baseline | Mean absolute error | Median absolute error |
+|---|---|---|
+| Same time yesterday | 64.81 | 33.57 |
+| AEMO pre-dispatch | 70.36 | 17.10 |
+
+Errors are in dollars per MWh, over all horizons from 0.5 to 24 hours, on the forecasts that AEMO covers.
