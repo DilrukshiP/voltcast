@@ -30,10 +30,10 @@ One step at a time. A box is ticked only after the step is verified.
   - [x] 1.4b Download, save to the raw store, command to run it
 - [x] 1.4c Backfill command for a range of months
 - [x] 1.4d Full history backfill (January 2024 to September 2026)
-- [ ] 1.5 dbt staging models and data tests
+- [x] 1.5 dbt staging models and data tests
   - [x] 1.5a dbt project with DuckDB and the staging model for actuals
   - [x] 1.5b Staging models for pre-dispatch and weather
-  - [ ] 1.5c Half-hour price table
+  - [x] 1.5c Half-hour price table
 - [ ] 1.6 Score the two baselines
 
 ## Sprint 2: Model and evals

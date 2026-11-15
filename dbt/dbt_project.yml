@@ -13,6 +13,8 @@ models:
       # Tables, not views: the monthly files are read once when the model is built,
       # and every test then reads the table inside the warehouse.
       +materialized: table
+    marts:
+      +materialized: table
 
 flags:
   send_anonymous_usage_stats: false
