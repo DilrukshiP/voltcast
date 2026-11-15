@@ -12,6 +12,7 @@ dependencies = [
     "beautifulsoup4>=4.12",
     "nemosis>=3.8",
     "pandas>=2.2",
+    "pyarrow>=17.0",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "requests>=2.32",
@@ -36,6 +37,10 @@ addopts = "-ra"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = "nemosis.*"
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100

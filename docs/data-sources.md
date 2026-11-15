@@ -24,6 +24,8 @@ Findings:
 - Negative prices are normal. The check week had a minimum of -60.00 dollars per MWh.
 - The library also downloads the month before the start date.
 - Our target, the 30-minute price, is the average of six 5-minute prices.
+- Known simplification: during rare AEMO interventions a second set of rows exists (`INTERVENTION` is 1). We keep the normal market run for both price and demand. For demand, the other run is slightly more exact in those periods.
+- Saved files: one Parquet file per month in `data/raw/actuals/`, with the columns `region`, `interval_end`, `price` and `demand`. A month is saved only if it passes every quality check.
 
 ## 2. AEMO pre-dispatch price forecasts
 
