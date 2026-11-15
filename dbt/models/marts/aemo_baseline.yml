@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: aemo_baseline
+    description: >
+      AEMO's pre-dispatch price forecast for every row of the forecast grid,
+      taken from the newest run that was published before the issue time.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48.
+        data_tests:
+          - not_null
+      - name: aemo_run_id
+        description: The AEMO run that was used. Empty if no run was published before the issue time.
+      - name: aemo_published_at
+        description: When that run was published.
+      - name: aemo_run_age_minutes
+        description: Minutes from the run's publish time to the issue time.
+      - name: aemo_forecast_price_dollars_per_mwh
+        description: AEMO's forecast price for the target half hour. Empty if the run does not reach that far ahead.

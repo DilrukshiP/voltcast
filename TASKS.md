@@ -35,6 +35,9 @@ One step at a time. A box is ticked only after the step is verified.
   - [x] 1.5b Staging models for pre-dispatch and weather
   - [x] 1.5c Half-hour price table
 - [ ] 1.6 Score the two baselines
+  - [x] 1.6a Forecast grid and AEMO baseline table
+  - [ ] 1.6b Naive baseline and score table
+  - [ ] 1.6c Baseline report with MAE by horizon
 
 ## Sprint 2: Model and evals
 

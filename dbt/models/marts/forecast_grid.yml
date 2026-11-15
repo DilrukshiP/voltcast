@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: forecast_grid
+    description: >
+      One row for every issue time and target time that VoltCast forecasts.
+      Baselines, features and model forecasts all join to this table,
+      so they are always compared on exactly the same rows.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48.
+        data_tests:
+          - not_null
