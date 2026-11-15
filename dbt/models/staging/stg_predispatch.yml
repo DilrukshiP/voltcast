@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: stg_predispatch
+    description: >
+      AEMO pre-dispatch price forecasts for Victoria. Every run is kept,
+      so one target_time has many rows, one for each run that forecast it.
+    columns:
+      - name: region
+        description: AEMO region code.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["VIC1"]
+      - name: run_id
+        description: AEMO identifier of the forecast run (PREDISPATCHSEQNO).
+        data_tests:
+          - not_null
+      - name: published_at
+        description: When AEMO wrote the run, in market time. A forecast may be used only after this time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that the row forecasts, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_minutes
+        description: Minutes from published_at to target_time.
+        data_tests:
+          - not_null
+      - name: forecast_price_dollars_per_mwh
+        description: Forecast regional reference price for the target half hour.
+        data_tests:
+          - not_null

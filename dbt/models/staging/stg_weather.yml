@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: stg_weather
+    description: Hourly weather forecasts for Melbourne, as they were one and two days earlier.
+    columns:
+      - name: target_time
+        description: The time that the forecast is for, always on the hour, in market time.
+        data_tests:
+          - not_null
+          - unique
+      - name: temperature_c_day1
+        description: Air temperature at 2 metres in degrees Celsius, forecast about one day earlier.
+        data_tests:
+          - not_null
+      - name: temperature_c_day2
+        description: Air temperature at 2 metres in degrees Celsius, forecast about two days earlier.
+        data_tests:
+          - not_null
+      - name: wind_speed_kmh_day1
+        description: Wind speed at 10 metres in km/h, forecast about one day earlier.
+        data_tests:
+          - not_null
+      - name: wind_speed_kmh_day2
+        description: Wind speed at 10 metres in km/h, forecast about two days earlier.
+        data_tests:
+          - not_null
+      - name: solar_radiation_wm2_day1
+        description: Solar radiation in watts per square metre, forecast about one day earlier.
+        data_tests:
+          - not_null
+      - name: solar_radiation_wm2_day2
+        description: Solar radiation in watts per square metre, forecast about two days earlier.
+        data_tests:
+          - not_null

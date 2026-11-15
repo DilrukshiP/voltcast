@@ -8,3 +8,11 @@ sources:
         description: Actual 5-minute prices and demand, one Parquet file per month.
         config:
           external_location: "{{ env_var('VOLTCAST_DATA_DIR', 'data') }}/raw/actuals/*.parquet"
+      - name: predispatch
+        description: AEMO pre-dispatch price forecasts with every run kept, one Parquet file per month.
+        config:
+          external_location: "{{ env_var('VOLTCAST_DATA_DIR', 'data') }}/raw/predispatch/*.parquet"
+      - name: weather
+        description: Hourly weather forecasts for Melbourne, one Parquet file per month.
+        config:
+          external_location: "{{ env_var('VOLTCAST_DATA_DIR', 'data') }}/raw/weather/*.parquet"
