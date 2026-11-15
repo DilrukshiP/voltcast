@@ -14,6 +14,7 @@ One step at a time. A box is ticked only after the step is verified.
   - [x] 0.7a Actual prices and demand (NEMOSIS)
   - [x] 0.7b AEMO pre-dispatch forecasts
   - [x] 0.7c Weather forecasts
+- [x] 0.8 Record data findings in `docs/data-sources.md`
 
 ## Sprint 1: Data and baselines
 
