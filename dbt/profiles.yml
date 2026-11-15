@@ -1,0 +1,11 @@
+# Connection settings for dbt. This file holds no secrets, so it is safe to commit.
+# The warehouse is one local DuckDB file inside the data folder.
+voltcast:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('VOLTCAST_DATA_DIR', 'data') }}/voltcast.duckdb"
+      # One model or test at a time. Each one opens every monthly file it reads,
+      # and macOS allows a process only 256 open files by default.
+      threads: 1
