@@ -46,6 +46,8 @@ Findings:
 - Monthly files start at 04:00, because the AEMO market day runs from 04:00 to 04:00.
 - **A run covers only 16 to 39.5 hours ahead.** Our horizon is 24 hours, so at some issue times AEMO has no forecast for our last hours.
 - Forecast prices can be extreme. The check month had a maximum of 22985.96 dollars per MWh.
+- Saved files: one Parquet file per month in `data/raw/predispatch/`, with the columns `region`, `run_id`, `published_at`, `target_time` and `forecast_price`. The downloaded zip files are kept in `data/raw/predispatch/archive/`.
+- File names before August 2024 use an older style. The code accepts both styles, but the older style is confirmed only by documentation until we download those months.
 
 Decisions:
 

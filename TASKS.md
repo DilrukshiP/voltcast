@@ -22,9 +22,9 @@ One step at a time. A box is ticked only after the step is verified.
 - [x] 1.2 Ingest actual prices and demand
   - [x] 1.2a Transform and quality checks, with tests
   - [x] 1.2b Download, save to the raw store, command to run it
-- [ ] 1.3 Ingest AEMO pre-dispatch forecasts
+- [x] 1.3 Ingest AEMO pre-dispatch forecasts
   - [x] 1.3a Transform and quality checks, with tests
-  - [ ] 1.3b Download, save to the raw store, command to run it
+  - [x] 1.3b Download, save to the raw store, command to run it
 - [ ] 1.4 Ingest weather forecasts
 - [ ] 1.5 dbt staging models and data tests
 - [ ] 1.6 Score the two baselines
