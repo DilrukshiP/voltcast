@@ -66,7 +66,7 @@ Decisions:
 | Versions we keep | Columns ending in `_previous_day1` and `_previous_day2`: the forecasts made about one and two days before the target hour |
 | Resolution | 1 hour |
 | Timezone setting | `Australia/Brisbane`, which is the same clock as market time |
-| History | From January 2024 |
+| History | Complete from 20 January 2024. We use it from 1 February 2024. |
 
 Findings:
 
@@ -85,6 +85,28 @@ Decisions:
 |---|---|---|---|
 | Actual prices and demand | Yes, the interval end | Many years | None found |
 | AEMO pre-dispatch | Yes, `LASTCHANGED` | Many years | Covers 16 to 39.5 hours ahead, not always 24 |
-| Weather forecasts | Fixed at one day before the target | From January 2024 | Older than needed for short horizons |
+| Weather forecasts | About one and two days before the target | Complete from 20 January 2024 | Older than needed for short horizons |
 
-The shortest history is the weather source, so the earliest possible start of our training data is January 2024.
+The shortest history is the weather source, so our training data starts on 1 February 2024.
+
+## Full history backfill (step 1.4d)
+
+We ran the backfill for January 2024 to September 2026, which is 33 months and 99 month files.
+
+| Source | Months saved | Result |
+|---|---|---|
+| Actual prices and demand | 33 of 33 | Every month passed all checks |
+| AEMO pre-dispatch | 33 of 33 | Every month passed all checks. Two months have missing runs. |
+| Weather forecasts | 32 of 33 | January 2024 was rejected |
+
+Findings:
+
+- The seven pre-dispatch files from before August 2024 use the old file name style (`PUBLIC_DVD_...`). They downloaded and passed every check, so the old style is now confirmed on real data.
+- September 2024 has 1438 pre-dispatch runs out of 1440, and November 2024 has 1439. AEMO did not publish 3 runs. The months are saved, and those issue times will have no AEMO forecast.
+- Weather for January 2024 has empty values in 454 of 744 hours for the one-day forecast and 478 hours for the two-day forecast. The archive is complete from 20 January 2024.
+
+Decisions:
+
+- The first month of our history is February 2024. This is the first full month in which all three sources are complete. The setting `history_start` enforces it.
+- The January 2024 files for actuals and pre-dispatch are kept. Features for the first days of February need prices from the days before.
+- The whole raw store is 434 MB. About 200 MB is the NEMOSIS cache and about 200 MB is the AEMO pre-dispatch zip files.

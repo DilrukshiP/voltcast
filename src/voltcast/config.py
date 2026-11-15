@@ -15,8 +15,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Region = Literal["NSW1", "QLD1", "SA1", "TAS1", "VIC1"]
 
-# Open-Meteo keeps day-ahead forecasts only from this date (see docs/data-sources.md).
-EARLIEST_HISTORY_START: date = date(2024, 1, 1)
+# The first full month in which all three sources are complete (see docs/data-sources.md).
+# The weather archive has empty values until 20 January 2024.
+EARLIEST_HISTORY_START: date = date(2024, 2, 1)
 
 
 class Settings(BaseSettings):
