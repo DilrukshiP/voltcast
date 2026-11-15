@@ -9,8 +9,10 @@ description = "24-hour electricity price forecasts for Victoria using AEMO marke
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "beautifulsoup4>=4.12",
     "nemosis>=3.8",
     "pandas>=2.2",
+    "requests>=2.32",
 ]
 
 [project.optional-dependencies]
