@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: baseline_scores
+    description: >
+      The actual price, the naive forecast and the AEMO forecast for every row of the
+      forecast grid, with the absolute error of each forecast. Our own model will later
+      be scored on these same rows.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48.
+        data_tests:
+          - not_null
+      - name: actual_price_dollars_per_mwh
+        description: The real half-hour price.
+        data_tests:
+          - not_null
+      - name: actual_is_spike
+        description: True when the real price is above the spike threshold.
+        data_tests:
+          - not_null
+      - name: naive_forecast_price_dollars_per_mwh
+        description: The real price at the same time one day earlier.
+        data_tests:
+          - not_null
+      - name: aemo_forecast_price_dollars_per_mwh
+        description: AEMO's pre-dispatch forecast. Empty where AEMO gave no forecast.
+      - name: naive_abs_error
+        description: Absolute difference between the naive forecast and the real price.
+        data_tests:
+          - not_null
+      - name: aemo_abs_error
+        description: Absolute difference between the AEMO forecast and the real price. Empty where AEMO gave no forecast.

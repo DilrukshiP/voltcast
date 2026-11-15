@@ -18,3 +18,7 @@ models:
 
 flags:
   send_anonymous_usage_stats: false
+
+vars:
+  # A half hour counts as a price spike when its price is above this value, in dollars per MWh.
+  spike_threshold: 300
