@@ -15,17 +15,11 @@ from nemosis import dynamic_data_compiler
 
 from voltcast.config import Settings, get_settings
 from voltcast.ingestion.actuals import tidy_actuals, validate_actuals
+from voltcast.ingestion.periods import month_bounds
 
 logger = logging.getLogger(__name__)
 
 NEMOSIS_TIME_FORMAT: str = "%Y/%m/%d %H:%M:%S"
-
-
-def month_bounds(year: int, month: int) -> tuple[datetime, datetime]:
-    """Return midnight on the first day of the month and of the next month."""
-    start = datetime(year, month, 1)
-    end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
-    return start, end
 
 
 def download_table(table: str, start: datetime, end: datetime, settings: Settings) -> pd.DataFrame:

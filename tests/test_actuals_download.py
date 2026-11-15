@@ -9,7 +9,7 @@ import pytest
 from voltcast.config import Settings
 from voltcast.ingestion import actuals_download
 from voltcast.ingestion.actuals import ACTUALS_COLUMNS
-from voltcast.ingestion.actuals_download import ingest_month, month_bounds, output_path
+from voltcast.ingestion.actuals_download import ingest_month, output_path
 from voltcast.ingestion.quality import DataQualityError
 
 INTERVALS_IN_AUGUST: int = 31 * 24 * 12
@@ -43,14 +43,6 @@ def patch_download(monkeypatch: pytest.MonkeyPatch, drop_last: int = 0) -> None:
         return fake_month(column, drop_last)
 
     monkeypatch.setattr(actuals_download, "download_table", fake_download)
-
-
-def test_month_bounds_for_a_normal_month() -> None:
-    assert month_bounds(2026, 8) == (datetime(2026, 8, 1), datetime(2026, 9, 1))
-
-
-def test_month_bounds_for_december_moves_to_next_year() -> None:
-    assert month_bounds(2026, 12) == (datetime(2026, 12, 1), datetime(2027, 1, 1))
 
 
 def test_ingest_month_saves_a_complete_month(
