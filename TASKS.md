@@ -28,6 +28,8 @@ One step at a time. A box is ticked only after the step is verified.
 - [x] 1.4 Ingest weather forecasts
   - [x] 1.4a Response model, transform and quality checks, with tests
   - [x] 1.4b Download, save to the raw store, command to run it
+- [x] 1.4c Backfill command for a range of months
+- [ ] 1.4d Full history backfill from January 2024
 - [ ] 1.5 dbt staging models and data tests
 - [ ] 1.6 Score the two baselines
 
