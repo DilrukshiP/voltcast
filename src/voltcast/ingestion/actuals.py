@@ -8,13 +8,11 @@ from datetime import datetime
 
 import pandas as pd
 
+from voltcast.ingestion.quality import DataQualityError
+
 INTERVAL: pd.Timedelta = pd.Timedelta(minutes=5)
 MARKET_PRICE_FLOOR: float = -1000.0  # dollars per MWh, set by the market rules
 ACTUALS_COLUMNS: list[str] = ["region", "interval_end", "price", "demand"]
-
-
-class DataQualityError(ValueError):
-    """Raised when downloaded data fails a quality check."""
 
 
 def _select(frame: pd.DataFrame, region: str, value_column: str) -> pd.DataFrame:

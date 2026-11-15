@@ -8,8 +8,9 @@ import pytest
 
 from voltcast.config import Settings
 from voltcast.ingestion import actuals_download
-from voltcast.ingestion.actuals import ACTUALS_COLUMNS, DataQualityError
+from voltcast.ingestion.actuals import ACTUALS_COLUMNS
 from voltcast.ingestion.actuals_download import ingest_month, month_bounds, output_path
+from voltcast.ingestion.quality import DataQualityError
 
 INTERVALS_IN_AUGUST: int = 31 * 24 * 12
 

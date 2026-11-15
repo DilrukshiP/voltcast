@@ -7,11 +7,11 @@ import pytest
 
 from voltcast.ingestion.actuals import (
     ACTUALS_COLUMNS,
-    DataQualityError,
     find_problems,
     tidy_actuals,
     validate_actuals,
 )
+from voltcast.ingestion.quality import DataQualityError
 
 START = datetime(2026, 8, 1, 0, 0)
 END = datetime(2026, 8, 1, 0, 15)  # three 5-minute intervals: 00:05, 00:10, 00:15
