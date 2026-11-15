@@ -63,7 +63,7 @@ Decisions:
 | How we download | Our own code with `requests` |
 | Location | Melbourne, latitude -37.81, longitude 144.96 |
 | Variables | `temperature_2m`, `wind_speed_10m`, `shortwave_radiation` |
-| Version we use | Columns ending in `_previous_day1`: the forecast made one day before the target hour |
+| Versions we keep | Columns ending in `_previous_day1` and `_previous_day2`: the forecasts made about one and two days before the target hour |
 | Resolution | 1 hour |
 | Timezone setting | `Australia/Brisbane`, which is the same clock as market time |
 | History | From January 2024 |
@@ -75,7 +75,7 @@ Findings:
 
 Decisions:
 
-- We use the day-ahead columns because a forecast made 24 hours before the target hour always exists at our issue time. It cannot contain future data.
+- We keep the one-day and two-day versions and never the newest value. A weather model run becomes public some hours after it starts. So for a target almost 24 hours ahead, the one-day version may not have been public yet at our issue time. The feature step will use the one-day version for short horizons and the two-day version for long horizons, so no feature can contain future data.
 - We do not use the Historical Forecast API, because it returns the newest model runs, which are fresher than what we would have had at the issue time.
 - Weather is hourly and prices are half-hourly. Both half hours of an hour get the same weather value.
 
