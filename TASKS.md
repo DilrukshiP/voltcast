@@ -18,7 +18,7 @@ One step at a time. A box is ticked only after the step is verified.
 
 ## Sprint 1: Data and baselines
 
-- [ ] 1.1 Settings with `pydantic` and `.env.example`
+- [x] 1.1 Settings with `pydantic` and `.env.example`
 - [ ] 1.2 Ingest actual prices and demand
 - [ ] 1.3 Ingest AEMO pre-dispatch forecasts
 - [ ] 1.4 Ingest weather forecasts

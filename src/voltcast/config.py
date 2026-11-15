@@ -1,0 +1,60 @@
+"""Project settings, read from environment variables and an optional `.env` file.
+
+Every setting has a safe default, so the project runs without a `.env` file.
+To change a value, set an environment variable with the prefix `VOLTCAST_`,
+for example `VOLTCAST_DATA_DIR=/tmp/voltcast-data`.
+"""
+
+from datetime import date
+from functools import lru_cache
+from pathlib import Path
+from typing import Literal
+
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+Region = Literal["NSW1", "QLD1", "SA1", "TAS1", "VIC1"]
+
+# Open-Meteo keeps day-ahead forecasts only from this date (see docs/data-sources.md).
+EARLIEST_HISTORY_START: date = date(2024, 1, 1)
+
+
+class Settings(BaseSettings):
+    """All values that can differ between machines or runs."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="VOLTCAST_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        frozen=True,
+    )
+
+    region: Region = "VIC1"
+    latitude: float = Field(default=-37.81, ge=-90, le=90)
+    longitude: float = Field(default=144.96, ge=-180, le=180)
+    market_timezone: str = "Australia/Brisbane"
+    history_start: date = EARLIEST_HISTORY_START
+    data_dir: Path = Path("data")
+    nemweb_archive_url: str = "https://www.nemweb.com.au/Data_Archive/Wholesale_Electricity/MMSDM"
+    weather_api_url: str = "https://previous-runs-api.open-meteo.com/v1/forecast"
+    request_timeout_seconds: int = Field(default=60, gt=0)
+
+    @field_validator("history_start")
+    @classmethod
+    def history_start_is_supported(cls, value: date) -> date:
+        """Reject a start date that is earlier than the weather history."""
+        if value < EARLIEST_HISTORY_START:
+            raise ValueError(f"history_start must be {EARLIEST_HISTORY_START} or later")
+        return value
+
+    @property
+    def raw_dir(self) -> Path:
+        """Folder for files exactly as downloaded."""
+        return self.data_dir / "raw"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Return one shared Settings object for the whole program."""
+    return Settings()
