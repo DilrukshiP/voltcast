@@ -32,6 +32,10 @@ models:
         description: True when the target half hour is on a Saturday or Sunday.
         data_tests:
           - not_null
+      - name: is_public_holiday
+        description: True when the target half hour is on a Victorian public holiday.
+        data_tests:
+          - not_null
       - name: month_of_year
         description: Month of the target half hour, from 1 to 12.
         data_tests:

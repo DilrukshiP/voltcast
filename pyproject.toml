@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "holidays>=0.50",
     "mypy>=1.10",
     "pandas-stubs>=2.2",
     "ruff>=0.6",

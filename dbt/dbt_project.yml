@@ -3,6 +3,7 @@ version: "0.1.0"
 profile: voltcast
 
 model-paths: ["models"]
+seed-paths: ["seeds"]
 test-paths: ["tests"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
@@ -17,6 +18,13 @@ models:
       +materialized: table
     features:
       +materialized: table
+
+seeds:
+  voltcast:
+    vic_public_holidays:
+      +column_types:
+        holiday_date: date
+        holiday_name: varchar
 
 flags:
   send_anonymous_usage_stats: false

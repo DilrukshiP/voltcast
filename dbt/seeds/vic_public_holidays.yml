@@ -1,0 +1,17 @@
+version: 2
+
+seeds:
+  - name: vic_public_holidays
+    description: >
+      Victorian public holidays. Written by scripts/generate_holidays.py
+      from the `holidays` library. Do not edit by hand.
+    columns:
+      - name: holiday_date
+        description: The date of the public holiday.
+        data_tests:
+          - not_null
+          - unique
+      - name: holiday_name
+        description: The name of the public holiday.
+        data_tests:
+          - not_null

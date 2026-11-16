@@ -45,6 +45,7 @@ One step at a time. A box is ticked only after the step is verified.
   - [x] 2.1a Price and demand history features
   - [x] 2.1b AEMO forecast features
   - [x] 2.1c Weather and calendar features
+  - [ ] 2.1c2 Public holiday feature
   - [ ] 2.1d One feature table, and a leakage test that changes future data
 - [ ] 2.2 LightGBM median model with MLflow tracking
 - [ ] 2.3 Quantile models and spike classifier
