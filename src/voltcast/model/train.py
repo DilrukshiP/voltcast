@@ -1,0 +1,158 @@
+"""Train the median price model and compare it with the baselines on the validation period.
+
+Run from the repository root, after `dbt build`:
+
+    python -m voltcast.model.train
+"""
+
+import logging
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from typing import NamedTuple
+
+import lightgbm as lgb
+import numpy as np
+import pandas as pd
+from pydantic import BaseModel, ConfigDict, Field
+
+from voltcast.config import Settings, get_settings
+from voltcast.evals.scores import score_by_horizon
+from voltcast.model.columns import FEATURE_COLUMNS, TARGET_COLUMN
+from voltcast.model.data import load_development_table, split_by_time
+
+logger = logging.getLogger(__name__)
+
+
+class TrainingConfig(BaseModel):
+    """Every value that shapes a training run. Recorded with each run."""
+
+    model_config = ConfigDict(frozen=True)
+
+    learning_rate: float = Field(default=0.05, gt=0, le=1)
+    num_leaves: int = Field(default=63, ge=2)
+    min_data_in_leaf: int = Field(default=200, ge=1)
+    feature_fraction: float = Field(default=0.8, gt=0, le=1)
+    bagging_fraction: float = Field(default=0.8, gt=0, le=1)
+    max_rounds: int = Field(default=3000, ge=1)
+    early_stopping_rounds: int = Field(default=50, ge=1)
+    # The last days of the training period are held back to decide when to stop.
+    tuning_days: int = Field(default=60, ge=1)
+    seed: int = 42
+
+    def lightgbm_parameters(self) -> dict[str, float | int | str | bool]:
+        """Return the settings in the names that LightGBM uses."""
+        return {
+            # "l1" means absolute error. A model trained on it predicts the median.
+            "objective": "l1",
+            "learning_rate": self.learning_rate,
+            "num_leaves": self.num_leaves,
+            "min_data_in_leaf": self.min_data_in_leaf,
+            "feature_fraction": self.feature_fraction,
+            "bagging_fraction": self.bagging_fraction,
+            "bagging_freq": 1,
+            "seed": self.seed,
+            "deterministic": True,
+            "force_row_wise": True,
+            "verbose": -1,
+        }
+
+
+class TrainedModel(NamedTuple):
+    """A trained model and the facts about how it was trained."""
+
+    booster: lgb.Booster
+    rounds: int
+    tuning_mae: float
+    training_rows: int
+
+
+def to_model_inputs(table: pd.DataFrame) -> pd.DataFrame:
+    """Return only the allowed input columns, in a fixed order, with true/false as 1/0."""
+    inputs = table[FEATURE_COLUMNS]
+    flags = [column for column in FEATURE_COLUMNS if inputs[column].dtype == bool]
+    return inputs.astype(dict.fromkeys(flags, "int8"))
+
+
+def as_datetime(day: date) -> datetime:
+    """Midnight at the start of a day."""
+    return datetime.combine(day, datetime.min.time())
+
+
+def train_median_model(training: pd.DataFrame, config: TrainingConfig) -> TrainedModel:
+    """Train in two passes.
+
+    Pass 1 trains on the early part of the data and watches the error on the last
+    `tuning_days`. It stops when that error no longer improves. This gives the number of rounds.
+    Pass 2 trains on all the data for that number of rounds, so the newest days are also used.
+    """
+    period_end = pd.Timestamp(training["target_time"].max()).to_pydatetime()
+    tuning_start = period_end - timedelta(days=config.tuning_days)
+    early, tuning = split_by_time(training, tuning_start, period_end)
+    if early.empty or tuning.empty:
+        raise ValueError("not enough data to hold back a tuning period")
+
+    parameters = config.lightgbm_parameters()
+    early_data = lgb.Dataset(to_model_inputs(early), early[TARGET_COLUMN])
+    tuning_data = lgb.Dataset(to_model_inputs(tuning), tuning[TARGET_COLUMN], reference=early_data)
+    first_pass = lgb.train(
+        parameters,
+        early_data,
+        num_boost_round=config.max_rounds,
+        valid_sets=[tuning_data],
+        valid_names=["tuning"],
+        callbacks=[lgb.early_stopping(config.early_stopping_rounds, verbose=False)],
+    )
+    rounds = first_pass.best_iteration
+    tuning_mae = float(first_pass.best_score["tuning"]["l1"])
+
+    all_data = lgb.Dataset(to_model_inputs(training), training[TARGET_COLUMN])
+    booster = lgb.train(parameters, all_data, num_boost_round=rounds)
+    return TrainedModel(booster, rounds, tuning_mae, len(training))
+
+
+def predict(booster: lgb.Booster, table: pd.DataFrame) -> pd.Series:
+    """Forecast the price in dollars per MWh for every row of the table."""
+    values = np.asarray(booster.predict(to_model_inputs(table)), dtype=float)
+    return pd.Series(values, index=table.index, name="model_forecast_price")
+
+
+def model_path(settings: Settings) -> Path:
+    """Where the trained median model is saved."""
+    return settings.data_dir / "models" / "median_model.txt"
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    settings = get_settings()
+    config = TrainingConfig()
+
+    table = load_development_table(settings)
+    training, validation = split_by_time(
+        table, as_datetime(settings.validation_start), as_datetime(settings.holdout_start)
+    )
+    logger.info("Training rows: %d, validation rows: %d", len(training), len(validation))
+
+    model = train_median_model(training, config)
+    logger.info("Rounds: %d, MAE on the tuning period: %.2f", model.rounds, model.tuning_mae)
+
+    forecasts = {
+        "naive": validation["price_1d_ago"],
+        "aemo": validation["aemo_forecast_price"],
+        "model": predict(model.booster, validation),
+    }
+    scores = score_by_horizon(validation[TARGET_COLUMN], validation["horizon_steps"], forecasts)
+    model_mae_all_rows = float((forecasts["model"] - validation[TARGET_COLUMN]).abs().mean())
+
+    path = model_path(settings)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    model.booster.save_model(str(path))
+
+    print(f"\nValidation period: {settings.validation_start} to {settings.holdout_start}")
+    print("Errors in dollars per MWh, on the forecasts that AEMO covers:\n")
+    print(scores.round(2).to_string(index=False))
+    print(f"\nModel MAE on all {len(validation):,} validation forecasts: {model_mae_all_rows:.2f}")
+    print(f"Model saved to {path}")
+
+
+if __name__ == "__main__":
+    main()
