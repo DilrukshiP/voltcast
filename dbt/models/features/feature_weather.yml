@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: feature_weather
+    description: >
+      Weather forecast for Melbourne at the target time, for every row of the forecast grid.
+      The forecast version is chosen so that it was public before the issue time.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48.
+        data_tests:
+          - not_null
+      - name: weather_lead_days
+        description: 1 when the one-day forecast is used, 2 when the two-day forecast is used.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2]
+                quote: false
+      - name: temperature_c
+        description: Forecast air temperature at 2 metres, in degrees Celsius.
+        data_tests:
+          - not_null
+      - name: wind_speed_kmh
+        description: Forecast wind speed at 10 metres, in km/h.
+        data_tests:
+          - not_null
+      - name: solar_radiation_wm2
+        description: Forecast solar radiation, in watts per square metre.
+        data_tests:
+          - not_null

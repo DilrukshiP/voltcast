@@ -24,3 +24,6 @@ flags:
 vars:
   # A half hour counts as a price spike when its price is above this value, in dollars per MWh.
   spike_threshold: 300
+  # Up to this many half-hour steps ahead, the one-day weather forecast is used.
+  # Beyond it, the two-day forecast is used. See docs/data-sources.md for the reason.
+  weather_day1_max_steps: 24

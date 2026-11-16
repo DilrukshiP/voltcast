@@ -75,7 +75,8 @@ Findings:
 
 Decisions:
 
-- We keep the one-day and two-day versions and never the newest value. A weather model run becomes public some hours after it starts. So for a target almost 24 hours ahead, the one-day version may not have been public yet at our issue time. The feature step will use the one-day version for short horizons and the two-day version for long horizons, so no feature can contain future data.
+- We keep the one-day and two-day versions and never the newest value. A weather model run becomes public some hours after it starts. So for a target almost 24 hours ahead, the one-day version may not have been public yet at our issue time. The feature model `feature_weather` uses the one-day version for targets up to 12 hours ahead and the two-day version beyond that, so no feature can contain future data.
+- The reason for 12 hours: the one-day version comes from a run that started at least 24 hours before the target. If a run needs up to 8 hours to become public, it is public at least 16 hours before the target. We use it only up to 12 hours ahead, which leaves a margin of 4 hours. The 8 hours is our assumption, not a published figure.
 - We do not use the Historical Forecast API, because it returns the newest model runs, which are fresher than what we would have had at the issue time.
 - Weather is hourly and prices are half-hourly. Both half hours of an hour get the same weather value.
 

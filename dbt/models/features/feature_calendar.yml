@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: feature_calendar
+    description: Calendar features for every row of the forecast grid, in market time.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48.
+        data_tests:
+          - not_null
+      - name: half_hour_of_day
+        description: Position of the target half hour in its day, from 0 (starts 00:00) to 47 (starts 23:30).
+        data_tests:
+          - not_null
+      - name: day_of_week
+        description: Day of the week of the target half hour, from 1 (Monday) to 7 (Sunday).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7]
+                quote: false
+      - name: is_weekend
+        description: True when the target half hour is on a Saturday or Sunday.
+        data_tests:
+          - not_null
+      - name: month_of_year
+        description: Month of the target half hour, from 1 to 12.
+        data_tests:
+          - not_null
+      - name: issue_hour
+        description: Hour of the day at which the forecast is made, from 0 to 23.
+        data_tests:
+          - not_null
