@@ -18,13 +18,18 @@ Python, DuckDB, dbt, Dagster, LightGBM, MLflow, FastAPI, Docker, Prometheus, Gra
 
 ## Results
 
-Model results will be added here once the evaluation is complete.
+In a 23-month walk-forward backtest (August 2024 to June 2026), a new model was trained for each month on earlier data only. Errors are in dollars per MWh, on 743,880 forecasts from 0.5 to 24 hours ahead.
 
-The two baselines are already scored on the development period (February 2024 to June 2026). The full table is in [evals/baseline_report.md](evals/baseline_report.md).
-
-| Baseline | Mean absolute error | Median absolute error |
+| Forecast | Mean absolute error | Median absolute error |
 |---|---|---|
-| Same time yesterday | 64.81 | 33.57 |
-| AEMO pre-dispatch | 70.36 | 17.10 |
+| Same time yesterday | 63.66 | 33.19 |
+| AEMO pre-dispatch | 53.00 | 15.64 |
+| VoltCast median model | 31.25 | 14.40 |
 
-Errors are in dollars per MWh, over all horizons from 0.5 to 24 hours, on the forecasts that AEMO covers.
+- The model's mean absolute error is 41.0% lower than AEMO's pre-dispatch forecast and 50.9% lower than "same time yesterday".
+- The model has a lower mean error than AEMO in 23 of 23 months.
+- Known limit: in the first 4 hours, AEMO's median error is lower than the model's (11.99 against 12.61), and all three forecasts have large errors during real price spikes.
+
+Full tables by horizon, month and market state: [evals/backtest_report.md](evals/backtest_report.md). Baselines on the whole development period: [evals/baseline_report.md](evals/baseline_report.md).
+
+The final holdout period (from July 2026) has not been scored yet.
