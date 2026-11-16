@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: feature_price_history
+    description: >
+      Features from past prices and demand for every row of the forecast grid.
+      Prices are in dollars per MWh and demand is in MW. Every value comes from
+      a half hour that had already ended at the issue time.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48.
+        data_tests:
+          - not_null
+      - name: price_last
+        description: Price of the half hour that ends at the issue time.
+        data_tests:
+          - not_null
+      - name: price_mean_3h
+        description: Mean price of the 6 half hours up to the issue time.
+        data_tests:
+          - not_null
+      - name: price_mean_24h
+        description: Mean price of the 48 half hours up to the issue time.
+        data_tests:
+          - not_null
+      - name: price_min_24h
+        description: Lowest price of the 48 half hours up to the issue time.
+        data_tests:
+          - not_null
+      - name: price_max_24h
+        description: Highest price of the 48 half hours up to the issue time.
+        data_tests:
+          - not_null
+      - name: price_std_24h
+        description: Standard deviation of the price over the 48 half hours up to the issue time.
+        data_tests:
+          - not_null
+      - name: price_mean_7d
+        description: Mean price of the 336 half hours up to the issue time.
+        data_tests:
+          - not_null
+      - name: demand_last
+        description: Demand of the half hour that ends at the issue time.
+        data_tests:
+          - not_null
+      - name: demand_mean_24h
+        description: Mean demand of the 48 half hours up to the issue time.
+        data_tests:
+          - not_null
+      - name: half_hours_in_7d_window
+        description: Number of half hours found in the 7-day window. It must be 336.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [336]
+                quote: false
+      - name: price_1d_ago
+        description: Price at the same time of day, 1 day before the target.
+        data_tests:
+          - not_null
+      - name: price_2d_ago
+        description: Price at the same time of day, 2 days before the target.
+        data_tests:
+          - not_null
+      - name: price_7d_ago
+        description: Price at the same time of day, 7 days before the target.
+        data_tests:
+          - not_null
+      - name: demand_1d_ago
+        description: Demand at the same time of day, 1 day before the target.
+        data_tests:
+          - not_null
+      - name: demand_7d_ago
+        description: Demand at the same time of day, 7 days before the target.
+        data_tests:
+          - not_null

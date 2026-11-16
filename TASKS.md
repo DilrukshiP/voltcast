@@ -42,6 +42,10 @@ One step at a time. A box is ticked only after the step is verified.
 ## Sprint 2: Model and evals
 
 - [ ] 2.1 Feature table and leakage test
+  - [x] 2.1a Price and demand history features
+  - [ ] 2.1b AEMO forecast features
+  - [ ] 2.1c Weather and calendar features
+  - [ ] 2.1d One feature table, and a leakage test that changes future data
 - [ ] 2.2 LightGBM median model with MLflow tracking
 - [ ] 2.3 Quantile models and spike classifier
 - [ ] 2.4 Walk-forward backtest and generated report
