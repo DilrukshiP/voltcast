@@ -72,6 +72,16 @@ class Settings(BaseSettings):
         """The DuckDB file that dbt builds."""
         return self.data_dir / "voltcast.duckdb"
 
+    @property
+    def mlflow_tracking_uri(self) -> str:
+        """Address of the local database in which MLflow records training runs."""
+        return f"sqlite:///{(self.data_dir / 'mlflow.db').resolve()}"
+
+    @property
+    def mlflow_artifact_dir(self) -> Path:
+        """Folder in which MLflow keeps the files of each run, such as the model."""
+        return (self.data_dir / "mlartifacts").resolve()
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -13,6 +13,7 @@ dependencies = [
     "dbt-duckdb>=1.10",
     "duckdb>=1.1",
     "lightgbm>=4.5",
+    "mlflow>=3.0",
     "nemosis>=3.8",
     "pandas>=2.2",
     "pyarrow>=17.0",
@@ -36,6 +37,10 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+filterwarnings = [
+    # A warning from inside MLflow about its own database code. We cannot fix it here.
+    "ignore:The ``noload`` loader strategy is deprecated",
+]
 
 [tool.mypy]
 strict = true

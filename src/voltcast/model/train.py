@@ -19,8 +19,11 @@ from voltcast.config import Settings, get_settings
 from voltcast.evals.scores import score_by_horizon
 from voltcast.model.columns import FEATURE_COLUMNS, TARGET_COLUMN
 from voltcast.model.data import load_development_table, split_by_time
+from voltcast.model.tracking import log_run
 
 logger = logging.getLogger(__name__)
+
+EXPERIMENT_NAME: str = "median_model"
 
 
 class TrainingConfig(BaseModel):
@@ -121,6 +124,19 @@ def model_path(settings: Settings) -> Path:
     return settings.data_dir / "models" / "median_model.txt"
 
 
+def flatten_scores(scores: pd.DataFrame) -> dict[str, float]:
+    """Turn the score table into one name per number, for example `model_mae/all_horizons`."""
+    flat: dict[str, float] = {}
+    error_columns = [
+        str(name) for name in scores.columns if str(name).endswith(("_mae", "_median"))
+    ]
+    for _, line in scores.iterrows():
+        horizon = str(line["horizon"]).lower().replace(" ", "_")
+        for column in error_columns:
+            flat[f"{column}/{horizon}"] = float(line[column])
+    return flat
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     settings = get_settings()
@@ -147,11 +163,34 @@ def main() -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     model.booster.save_model(str(path))
 
+    run_id = log_run(
+        settings,
+        EXPERIMENT_NAME,
+        run_name=f"validation from {settings.validation_start}",
+        parameters={
+            **config.model_dump(),
+            "history_start": settings.history_start,
+            "validation_start": settings.validation_start,
+            "holdout_start": settings.holdout_start,
+            "training_rows": model.training_rows,
+            "validation_rows": len(validation),
+            "feature_count": len(FEATURE_COLUMNS),
+            "rounds": model.rounds,
+        },
+        metrics={
+            "tuning_mae": model.tuning_mae,
+            "model_mae_all_rows": model_mae_all_rows,
+            **flatten_scores(scores),
+        },
+        files=[path],
+    )
+
     print(f"\nValidation period: {settings.validation_start} to {settings.holdout_start}")
     print("Errors in dollars per MWh, on the forecasts that AEMO covers:\n")
     print(scores.round(2).to_string(index=False))
     print(f"\nModel MAE on all {len(validation):,} validation forecasts: {model_mae_all_rows:.2f}")
     print(f"Model saved to {path}")
+    print(f"Run recorded in MLflow with id {run_id}")
 
 
 if __name__ == "__main__":
