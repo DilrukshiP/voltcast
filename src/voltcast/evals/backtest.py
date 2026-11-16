@@ -2,7 +2,8 @@
 
 The backtest repeats one experiment for every month of the backtest period:
 
-1. Train a new model on all forecasts whose answers were known before the month starts.
+1. Train new models on all forecasts whose answers were known before the month starts:
+   one for the median price, and two for the low and high ends of the uncertainty band.
 2. Forecast that month.
 3. Keep the forecasts, beside the actual price and both baselines.
 
@@ -25,7 +26,7 @@ from voltcast.evals.scores import score_by_horizon
 from voltcast.ingestion.periods import month_bounds, months_between
 from voltcast.model.columns import KEY_COLUMNS, TARGET_COLUMN
 from voltcast.model.data import load_development_table, split_by_time
-from voltcast.model.train import TrainingConfig, predict, train_median_model
+from voltcast.model.train import TrainingConfig, predict, train_median_model, train_price_model
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,11 @@ PREDICTION_COLUMNS: list[str] = [
     "aemo_forecast_price",
     "model_forecast_price",
 ]
+
+# The band: the actual price should be below the low estimate in 10% of cases
+# and below the high estimate in 90% of cases, so inside the band in 80% of cases.
+BAND_QUANTILES: tuple[float, float] = (0.1, 0.9)
+BAND_COLUMNS: list[str] = ["model_low_price", "model_high_price"]
 
 
 class Fold(NamedTuple):
@@ -59,8 +65,16 @@ def monthly_folds(first_month: date, period_end: date) -> list[Fold]:
     return [fold for fold in folds if fold.end <= pd.Timestamp(period_end)]
 
 
-def run_backtest(table: pd.DataFrame, folds: list[Fold], config: TrainingConfig) -> pd.DataFrame:
-    """Train and forecast once per fold, and return all forecasts in one table."""
+def run_backtest(
+    table: pd.DataFrame, folds: list[Fold], config: TrainingConfig, with_band: bool = False
+) -> pd.DataFrame:
+    """Train and forecast once per fold, and return all forecasts in one table.
+
+    With `with_band`, two more models per fold give a low and a high estimate.
+    The three models are trained separately, so the values are put in order afterwards:
+    the low estimate is never above the median, and the high estimate never below it.
+    """
+    columns = [*PREDICTION_COLUMNS, *BAND_COLUMNS] if with_band else PREDICTION_COLUMNS
     parts: list[pd.DataFrame] = []
     for fold in folds:
         training, test = split_by_time(table, fold.start.to_pydatetime(), fold.end.to_pydatetime())
@@ -69,7 +83,13 @@ def run_backtest(table: pd.DataFrame, folds: list[Fold], config: TrainingConfig)
         part["test_month"] = fold.label
         part["naive_forecast_price"] = test["price_1d_ago"]
         part["model_forecast_price"] = predict(model.booster, test)
-        parts.append(part[PREDICTION_COLUMNS])
+        if with_band:
+            low_model = train_price_model(training, config, quantile=BAND_QUANTILES[0])
+            high_model = train_price_model(training, config, quantile=BAND_QUANTILES[1])
+            median = part["model_forecast_price"]
+            part["model_low_price"] = predict(low_model.booster, test).clip(upper=median)
+            part["model_high_price"] = predict(high_model.booster, test).clip(lower=median)
+        parts.append(part[columns])
         logger.info(
             "%s: trained on %d rows in %d rounds, forecast %d rows",
             fold.label,
@@ -101,13 +121,15 @@ def main() -> None:
     folds = monthly_folds(settings.backtest_start, settings.holdout_start)
     logger.info("Backtest over %d months: %s to %s", len(folds), folds[0].label, folds[-1].label)
 
-    predictions = run_backtest(load_development_table(settings), folds, TrainingConfig())
+    predictions = run_backtest(
+        load_development_table(settings), folds, TrainingConfig(), with_band=True
+    )
 
     path = predictions_path(settings)
     path.parent.mkdir(parents=True, exist_ok=True)
     predictions.to_parquet(path, index=False)
 
-    print(f"\nBacktest period: {folds[0].label} to {folds[-1].label}, {len(folds)} models")
+    print(f"\nBacktest period: {folds[0].label} to {folds[-1].label}, {len(folds)} months")
     print("Errors in dollars per MWh, on the forecasts that AEMO covers:\n")
     print(score_predictions(predictions).round(2).to_string(index=False))
     print(f"\nForecasts saved to {path}")

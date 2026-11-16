@@ -8,6 +8,7 @@ from voltcast.evals.backtest_report import (
     absolute_errors,
     headline,
     render_report,
+    score_band,
     score_groups,
 )
 
@@ -76,3 +77,44 @@ def test_report_shows_the_summary_and_all_three_views() -> None:
     assert "lower mean error than AEMO: 2 of 2" in report
     assert "| 2025-01 | 2 | 40.00 | 10.00 | 5.00 | -50.0% |" in report
     assert "| Spike | 1 | 900.00 | 400.00 | 200.00 | -50.0% |" in report
+
+
+def predictions_with_band() -> pd.DataFrame:
+    """The same five forecasts with a band. Row 3 is a spike far above its band."""
+    data = predictions()
+    data["model_low_price"] = [90.0, 101.0, 700.0, 80.0, 50.0]
+    data["model_high_price"] = [120.0, 130.0, 900.0, 95.0, 150.0]
+    return data
+
+
+def test_band_scores_by_horizon_and_market_state() -> None:
+    band = score_band(predictions_with_band()).set_index("group")
+    # Actual prices: 100 inside 90-120, 100 below 101-130, 1000 above 700-900,
+    # 100 above 80-95, 100 inside 50-150.
+    everything = band.loc["All horizons"]
+    assert everything["forecasts"] == 5
+    assert everything["inside"] == pytest.approx(0.4)
+    assert everything["below_low"] == pytest.approx(0.2)
+    assert everything["above_high"] == pytest.approx(0.4)
+    assert everything["mean_width"] == pytest.approx((30 + 29 + 200 + 15 + 100) / 5)
+    assert band.loc["Spike", "forecasts"] == 1
+    assert band.loc["Spike", "above_high"] == 1.0
+    assert band.loc["No spike", "forecasts"] == 4
+
+
+def test_report_has_the_band_section_only_when_a_band_is_given() -> None:
+    data = predictions_with_band()
+    errors = absolute_errors(data)
+    by_month = score_groups(errors, "test_month")
+    parts = (
+        headline(errors, by_month),
+        score_predictions(data),
+        by_month,
+        score_groups(errors, "is_spike"),
+    )
+    without_band = render_report(*parts)
+    with_band = render_report(*parts, score_band(data))
+    assert "## Uncertainty band" not in without_band
+    assert "## Uncertainty band" in with_band
+    assert "10% of actual prices below it, 80% inside it and 10% above it" in with_band
+    assert "| Spike | 1 | 0.0% | 0.0% | 100.0% | 200.00 | 200.00 |" in with_band

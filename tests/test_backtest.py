@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from voltcast.evals.backtest import (
+    BAND_COLUMNS,
     PREDICTION_COLUMNS,
     Fold,
     monthly_folds,
@@ -104,3 +105,25 @@ def test_scores_compare_the_three_forecasts() -> None:
     )
     everything = score_predictions(predictions).set_index("horizon").loc["0.5 to 4 hours"]
     assert everything["model_mae"] < everything["aemo_mae"] < everything["naive_mae"]
+
+
+def test_band_is_added_and_never_crosses_the_median() -> None:
+    table = made_up_table()
+    folds = monthly_folds(date(2025, 4, 1), date(2025, 5, 1))
+
+    with_band = run_backtest(table, folds, SMALL_CONFIG, with_band=True)
+
+    assert list(with_band.columns) == [*PREDICTION_COLUMNS, *BAND_COLUMNS]
+    assert (with_band["model_low_price"] <= with_band["model_forecast_price"]).all()
+    assert (with_band["model_forecast_price"] <= with_band["model_high_price"]).all()
+    assert (with_band["model_high_price"] > with_band["model_low_price"]).mean() > 0.95
+
+
+def test_adding_the_band_does_not_change_the_median_forecast() -> None:
+    table = made_up_table()
+    folds = monthly_folds(date(2025, 4, 1), date(2025, 5, 1))
+
+    without_band = run_backtest(table, folds, SMALL_CONFIG)
+    with_band = run_backtest(table, folds, SMALL_CONFIG, with_band=True)
+
+    pd.testing.assert_frame_equal(without_band, with_band[PREDICTION_COLUMNS])

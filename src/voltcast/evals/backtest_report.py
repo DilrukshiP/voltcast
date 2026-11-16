@@ -14,8 +14,13 @@ from pathlib import Path
 import pandas as pd
 
 from voltcast.config import get_settings
-from voltcast.evals.backtest import predictions_path, score_predictions
-from voltcast.evals.baselines import SPIKE_THRESHOLD
+from voltcast.evals.backtest import (
+    BAND_COLUMNS,
+    BAND_QUANTILES,
+    predictions_path,
+    score_predictions,
+)
+from voltcast.evals.baselines import HORIZON_GROUPS, SPIKE_THRESHOLD
 from voltcast.model.columns import TARGET_COLUMN
 from voltcast.model.tracking import log_run
 from voltcast.model.train import flatten_scores
@@ -73,11 +78,72 @@ def headline(errors: pd.DataFrame, by_month: pd.DataFrame) -> dict[str, float]:
     }
 
 
+def band_line(group: str, rows: pd.DataFrame) -> dict[str, object]:
+    """Describe how the actual prices of some rows lie relative to the band."""
+    actual, low, high = rows[TARGET_COLUMN], rows["model_low_price"], rows["model_high_price"]
+    return {
+        "group": group,
+        "forecasts": len(rows),
+        "below_low": float((actual < low).mean()),
+        "inside": float(((actual >= low) & (actual <= high)).mean()),
+        "above_high": float((actual > high).mean()),
+        "mean_width": float((high - low).mean()),
+        "median_width": float((high - low).median()),
+    }
+
+
+def score_band(predictions: pd.DataFrame) -> pd.DataFrame:
+    """Return the band measures for each horizon group and for each market state.
+
+    All forecasts are used here, also those that AEMO does not cover,
+    because the band is not compared with AEMO.
+    """
+    lines = [
+        band_line(
+            group.label,
+            predictions.loc[
+                predictions["horizon_steps"].between(group.first_step, group.last_step)
+            ],
+        )
+        for group in HORIZON_GROUPS
+    ]
+    is_spike = predictions[TARGET_COLUMN] > SPIKE_THRESHOLD
+    lines.append(band_line("No spike", predictions.loc[~is_spike]))
+    lines.append(band_line("Spike", predictions.loc[is_spike]))
+    return pd.DataFrame(lines)
+
+
+def render_band_section(band: pd.DataFrame) -> list[str]:
+    """Build the report section about the uncertainty band."""
+    low, high = BAND_QUANTILES
+    lines = [
+        "",
+        "## Uncertainty band",
+        "",
+        f"The band runs from the model's {low:.0%} estimate to its {high:.0%} estimate. "
+        f"A well-calibrated band has {low:.0%} of actual prices below it, "
+        f"{high - low:.0%} inside it and {1 - high:.0%} above it. "
+        "This section uses all forecasts, also those that AEMO does not cover.",
+        "",
+        "| Group | Forecasts | Below the band | Inside the band | Above the band "
+        "| Mean width | Median width |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for line in band.itertuples(index=False):
+        lines.append(
+            f"| {line.group} | {line.forecasts:,} | {line.below_low:.1%} | {line.inside:.1%} "
+            f"| {line.above_high:.1%} | {line.mean_width:,.2f} | {line.median_width:,.2f} |"
+        )
+    lines += ["", "Widths are in dollars per MWh."]
+    return lines
+
+
 def render_report(
     summary: dict[str, float],
     by_horizon: pd.DataFrame,
     by_month: pd.DataFrame,
     by_state: pd.DataFrame,
+    band: pd.DataFrame | None = None,
 ) -> str:
     """Build the report text in Markdown."""
     months = int(summary["months"])
@@ -147,6 +213,8 @@ def render_report(
             f"| {state} | {line.forecasts:,} | {line.naive_mae:,.2f} | {line.aemo_mae:,.2f} "
             f"| {line.model_mae:,.2f} | {line.model_vs_aemo:+.1%} |"
         )
+    if band is not None:
+        lines += render_band_section(band)
     lines += [
         "",
         "## How to read this report",
@@ -172,8 +240,18 @@ def main() -> None:
     by_state = score_groups(errors, "is_spike")
     summary = headline(errors, by_month)
 
+    band = None
+    metrics = {**summary, **flatten_scores(by_horizon)}
+    if set(BAND_COLUMNS) <= set(predictions.columns):
+        band = score_band(predictions)
+        overall = band.loc[band["group"] == "All horizons"].iloc[0]
+        metrics["band_inside"] = float(overall["inside"])
+        metrics["band_mean_width"] = float(overall["mean_width"])
+
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_PATH.write_text(render_report(summary, by_horizon, by_month, by_state), encoding="utf-8")
+    REPORT_PATH.write_text(
+        render_report(summary, by_horizon, by_month, by_state, band), encoding="utf-8"
+    )
     logger.info("Wrote %s", REPORT_PATH)
 
     run_id = log_run(
@@ -185,7 +263,7 @@ def main() -> None:
             "last_test_month": by_month["test_month"].max(),
             "holdout_start": settings.holdout_start,
         },
-        metrics={**summary, **flatten_scores(by_horizon)},
+        metrics=metrics,
         files=[REPORT_PATH],
     )
     logger.info("Recorded in MLflow with id %s", run_id)

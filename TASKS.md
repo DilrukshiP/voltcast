@@ -54,7 +54,7 @@ One step at a time. A box is ticked only after the step is verified.
   - [x] 2.2c MLflow tracking
 - [ ] 2.3 Quantile models and spike classifier
   - [x] 2.3a Training code for quantile models
-  - [ ] 2.3b Uncertainty band in the backtest and the report
+  - [x] 2.3b Uncertainty band in the backtest and the report
   - [ ] 2.3c Spike classifier in the backtest
   - [ ] 2.3d Spike classifier scores in the report
 - [x] 2.4 Walk-forward backtest and generated report

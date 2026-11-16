@@ -61,6 +61,22 @@ A spike is a half hour with an actual price above 300 dollars per MWh.
 | No spike | 738,971 | 51.72 | 37.35 | 21.79 | -41.6% |
 | Spike | 4,909 | 1,860.37 | 2,408.88 | 1,454.27 | -39.6% |
 
+## Uncertainty band
+
+The band runs from the model's 10% estimate to its 90% estimate. A well-calibrated band has 10% of actual prices below it, 80% inside it and 10% above it. This section uses all forecasts, also those that AEMO does not cover.
+
+| Group | Forecasts | Below the band | Inside the band | Above the band | Mean width | Median width |
+|---|---|---|---|---|---|---|
+| 0.5 to 4 hours | 133,932 | 10.1% | 80.8% | 9.0% | 77.75 | 62.91 |
+| 4.5 to 12 hours | 265,656 | 11.3% | 77.8% | 10.9% | 78.17 | 63.85 |
+| 12.5 to 16 hours | 131,724 | 10.9% | 77.5% | 11.6% | 78.03 | 64.14 |
+| 16.5 to 24 hours | 261,240 | 10.8% | 78.0% | 11.2% | 91.27 | 72.94 |
+| All horizons | 792,552 | 10.9% | 78.3% | 10.8% | 82.39 | 66.11 |
+| No spike | 787,441 | 11.0% | 78.6% | 10.4% | 80.49 | 65.89 |
+| Spike | 5,111 | 0.0% | 32.9% | 67.1% | 375.25 | 181.54 |
+
+Widths are in dollars per MWh.
+
 ## How to read this report
 
 - Naive: the actual price at the same time one day earlier.
