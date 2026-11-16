@@ -54,6 +54,8 @@ One step at a time. A box is ticked only after the step is verified.
   - [x] 2.2c MLflow tracking
 - [ ] 2.3 Quantile models and spike classifier
 - [ ] 2.4 Walk-forward backtest and generated report
+  - [x] 2.4a Walk-forward backtest of the median model
+  - [ ] 2.4b Generated backtest report by horizon, month and market state
 
 ## Sprint 3: Production system
 
