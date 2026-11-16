@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: features
+    description: >
+      The training table. One row per forecast in the grid, with the value to predict
+      and all model inputs. The inputs are described in the four feature models:
+      feature_price_history, feature_aemo, feature_weather and feature_calendar.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48. Also used as a model input.
+        data_tests:
+          - not_null
+      - name: actual_price
+        description: The real half-hour price in dollars per MWh. This is the value to predict, never an input.
+        data_tests:
+          - not_null
+      - name: price_last
+        description: See feature_price_history.
+        data_tests:
+          - not_null
+      - name: aemo_has_forecast
+        description: See feature_aemo.
+        data_tests:
+          - not_null
+      - name: temperature_c
+        description: See feature_weather.
+        data_tests:
+          - not_null
+      - name: is_public_holiday
+        description: See feature_calendar.
+        data_tests:
+          - not_null
