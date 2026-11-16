@@ -11,6 +11,7 @@ from voltcast.model.train import (
     predict,
     to_model_inputs,
     train_median_model,
+    train_price_model,
 )
 
 FLAG_COLUMNS = ["aemo_has_forecast", "is_weekend", "is_public_holiday"]
@@ -59,7 +60,7 @@ def test_training_learns_the_pattern_in_the_data() -> None:
 
     assert 1 <= model.rounds <= SMALL_CONFIG.max_rounds
     assert model.training_rows == len(table)
-    assert model.tuning_mae > 0
+    assert model.tuning_loss > 0
     assert model_error < 0.5 * constant_error
 
 
@@ -80,3 +81,28 @@ def test_config_rejects_impossible_values() -> None:
         TrainingConfig(learning_rate=0.0)
     with pytest.raises(ValidationError):
         TrainingConfig(feature_fraction=1.5)
+
+
+def test_quantile_models_put_the_high_estimate_above_the_low_estimate() -> None:
+    table = made_up_table()
+    low = predict(train_price_model(table, SMALL_CONFIG, quantile=0.1).booster, table)
+    high = predict(train_price_model(table, SMALL_CONFIG, quantile=0.9).booster, table)
+    assert (high > low).mean() > 0.95
+
+
+def test_quantile_model_leaves_about_the_right_share_of_prices_below_it() -> None:
+    """With noise in the data, about 10% of prices lie below the 10% estimate."""
+    table = made_up_table()
+    random = np.random.default_rng(3)
+    table[TARGET_COLUMN] = table[TARGET_COLUMN] + random.normal(0.0, 15.0, len(table))
+
+    low = predict(train_price_model(table, SMALL_CONFIG, quantile=0.1).booster, table)
+    high = predict(train_price_model(table, SMALL_CONFIG, quantile=0.9).booster, table)
+
+    assert 0.05 < (table[TARGET_COLUMN] < low).mean() < 0.15
+    assert 0.85 < (table[TARGET_COLUMN] < high).mean() < 0.95
+
+
+def test_quantile_outside_zero_to_one_is_rejected() -> None:
+    with pytest.raises(ValueError, match="quantile must be between 0 and 1"):
+        train_price_model(made_up_table(), SMALL_CONFIG, quantile=1.0)

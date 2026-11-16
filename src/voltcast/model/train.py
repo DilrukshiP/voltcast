@@ -42,11 +42,23 @@ class TrainingConfig(BaseModel):
     tuning_days: int = Field(default=60, ge=1)
     seed: int = 42
 
-    def lightgbm_parameters(self) -> dict[str, float | int | str | bool]:
-        """Return the settings in the names that LightGBM uses."""
-        return {
+    def lightgbm_parameters(
+        self, quantile: float | None = None
+    ) -> dict[str, float | int | str | bool]:
+        """Return the settings in the names that LightGBM uses.
+
+        Without `quantile`, the model predicts the median. With `quantile`, for example 0.9,
+        it predicts the price that the actual price stays below in 90% of cases.
+        """
+        if quantile is None:
             # "l1" means absolute error. A model trained on it predicts the median.
-            "objective": "l1",
+            goal: dict[str, float | int | str | bool] = {"objective": "l1", "metric": "l1"}
+        else:
+            if not 0 < quantile < 1:
+                raise ValueError("quantile must be between 0 and 1")
+            goal = {"objective": "quantile", "alpha": quantile, "metric": "quantile"}
+        return {
+            **goal,
             "learning_rate": self.learning_rate,
             "num_leaves": self.num_leaves,
             "min_data_in_leaf": self.min_data_in_leaf,
@@ -65,7 +77,8 @@ class TrainedModel(NamedTuple):
 
     booster: lgb.Booster
     rounds: int
-    tuning_mae: float
+    # The error on the tuning period: absolute error for the median, pinball loss for a quantile.
+    tuning_loss: float
     training_rows: int
 
 
@@ -81,20 +94,22 @@ def as_datetime(day: date) -> datetime:
     return datetime.combine(day, datetime.min.time())
 
 
-def train_median_model(training: pd.DataFrame, config: TrainingConfig) -> TrainedModel:
-    """Train in two passes.
+def train_price_model(
+    training: pd.DataFrame, config: TrainingConfig, quantile: float | None = None
+) -> TrainedModel:
+    """Train a model for the median price, or for a quantile of the price, in two passes.
 
     Pass 1 trains on the early part of the data and watches the error on the last
     `tuning_days`. It stops when that error no longer improves. This gives the number of rounds.
     Pass 2 trains on all the data for that number of rounds, so the newest days are also used.
     """
+    parameters = config.lightgbm_parameters(quantile)
     period_end = pd.Timestamp(training["target_time"].max()).to_pydatetime()
     tuning_start = period_end - timedelta(days=config.tuning_days)
     early, tuning = split_by_time(training, tuning_start, period_end)
     if early.empty or tuning.empty:
         raise ValueError("not enough data to hold back a tuning period")
 
-    parameters = config.lightgbm_parameters()
     early_data = lgb.Dataset(to_model_inputs(early), early[TARGET_COLUMN])
     tuning_data = lgb.Dataset(to_model_inputs(tuning), tuning[TARGET_COLUMN], reference=early_data)
     first_pass = lgb.train(
@@ -106,11 +121,16 @@ def train_median_model(training: pd.DataFrame, config: TrainingConfig) -> Traine
         callbacks=[lgb.early_stopping(config.early_stopping_rounds, verbose=False)],
     )
     rounds = first_pass.best_iteration
-    tuning_mae = float(first_pass.best_score["tuning"]["l1"])
+    tuning_loss = float(first_pass.best_score["tuning"][str(parameters["metric"])])
 
     all_data = lgb.Dataset(to_model_inputs(training), training[TARGET_COLUMN])
     booster = lgb.train(parameters, all_data, num_boost_round=rounds)
-    return TrainedModel(booster, rounds, tuning_mae, len(training))
+    return TrainedModel(booster, rounds, tuning_loss, len(training))
+
+
+def train_median_model(training: pd.DataFrame, config: TrainingConfig) -> TrainedModel:
+    """Train the model for the median price."""
+    return train_price_model(training, config)
 
 
 def predict(booster: lgb.Booster, table: pd.DataFrame) -> pd.Series:
@@ -149,7 +169,7 @@ def main() -> None:
     logger.info("Training rows: %d, validation rows: %d", len(training), len(validation))
 
     model = train_median_model(training, config)
-    logger.info("Rounds: %d, MAE on the tuning period: %.2f", model.rounds, model.tuning_mae)
+    logger.info("Rounds: %d, MAE on the tuning period: %.2f", model.rounds, model.tuning_loss)
 
     forecasts = {
         "naive": validation["price_1d_ago"],
@@ -178,7 +198,7 @@ def main() -> None:
             "rounds": model.rounds,
         },
         metrics={
-            "tuning_mae": model.tuning_mae,
+            "tuning_mae": model.tuning_loss,
             "model_mae_all_rows": model_mae_all_rows,
             **flatten_scores(scores),
         },
