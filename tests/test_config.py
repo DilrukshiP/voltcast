@@ -57,3 +57,13 @@ def test_holdout_before_history_start_is_rejected(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setenv("VOLTCAST_HOLDOUT_START", "2024-01-15")
     with pytest.raises(ValidationError, match="holdout_start must be after history_start"):
         make_settings()
+
+
+def test_default_validation_period_is_the_three_months_before_the_holdout() -> None:
+    assert make_settings().validation_start == date(2026, 4, 1)
+
+
+def test_validation_start_after_the_holdout_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VOLTCAST_VALIDATION_START", "2026-08-01")
+    with pytest.raises(ValidationError, match="validation_start must be between"):
+        make_settings()

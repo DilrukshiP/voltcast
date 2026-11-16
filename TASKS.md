@@ -49,6 +49,9 @@ One step at a time. A box is ticked only after the step is verified.
   - [x] 2.1d One training table that joins all features
   - [x] 2.1e Leakage test that changes future data
 - [ ] 2.2 LightGBM median model with MLflow tracking
+  - [x] 2.2a Load the training table and split it by time
+  - [ ] 2.2b First LightGBM model for the median price
+  - [ ] 2.2c MLflow tracking
 - [ ] 2.3 Quantile models and spike classifier
 - [ ] 2.4 Walk-forward backtest and generated report
 

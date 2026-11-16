@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     longitude: float = Field(default=144.96, ge=-180, le=180)
     market_timezone: str = "Australia/Brisbane"
     history_start: date = EARLIEST_HISTORY_START
+    # From this date to the holdout, data is used to compare models, not to train them.
+    validation_start: date = date(2026, 4, 1)
     # Data from this date on is the final holdout. It is scored once, at the end of the project.
     holdout_start: date = date(2026, 7, 1)
     data_dir: Path = Path("data")
@@ -52,10 +54,12 @@ class Settings(BaseSettings):
         return value
 
     @model_validator(mode="after")
-    def holdout_is_after_history_start(self) -> Self:
-        """Reject a holdout that starts before any data exists."""
+    def periods_are_in_order(self) -> Self:
+        """Reject periods that are not in the order history, validation, holdout."""
         if self.holdout_start <= self.history_start:
             raise ValueError("holdout_start must be after history_start")
+        if not self.history_start < self.validation_start < self.holdout_start:
+            raise ValueError("validation_start must be between history_start and holdout_start")
         return self
 
     @property
