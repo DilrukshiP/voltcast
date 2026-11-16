@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: feature_aemo
+    description: >
+      Features from AEMO's pre-dispatch forecast for every row of the forecast grid.
+      Prices are in dollars per MWh. Only runs published before the issue time are used.
+    columns:
+      - name: issue_time
+        description: When the forecast is made, on the hour, in market time.
+        data_tests:
+          - not_null
+      - name: target_time
+        description: End of the half hour that is forecast, in market time.
+        data_tests:
+          - not_null
+      - name: horizon_steps
+        description: Number of half hours from issue_time to target_time, from 1 to 48.
+        data_tests:
+          - not_null
+      - name: aemo_forecast_price
+        description: AEMO's forecast for the target half hour, from the newest run. Empty if the run does not reach the target.
+      - name: aemo_has_forecast
+        description: True when aemo_forecast_price has a value.
+        data_tests:
+          - not_null
+      - name: aemo_forecast_price_previous_run
+        description: AEMO's forecast for the same target half hour, from the previous run.
+      - name: aemo_forecast_change
+        description: Newest forecast minus previous forecast for the target. A large value means AEMO just revised its view.
+      - name: aemo_run_max_price
+        description: Highest price that the newest run forecasts for any half hour after the issue time.
+        data_tests:
+          - not_null
+      - name: aemo_run_mean_price
+        description: Mean price that the newest run forecasts over all half hours after the issue time.
+        data_tests:
+          - not_null
+      - name: aemo_run_steps_ahead
+        description: Number of half hours after the issue time that the newest run covers.
+        data_tests:
+          - not_null
+      - name: aemo_newest_run_published_at
+        description: When the newest run was published. Kept for the tests, not used as a feature.
+        data_tests:
+          - not_null
+      - name: aemo_previous_run_published_at
+        description: When the previous run was published. Kept for the tests, not used as a feature.
